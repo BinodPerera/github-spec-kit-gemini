@@ -1,50 +1,54 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Python Modular Monolith (PMM) Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Strict Module Encapsulation
+Each module owns its specific data models and business logic. Cross-module database access is strictly forbidden; no module may directly query tables belonging to another. This ensures each module remains independent and reduces side effects.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Interface-First (Public APIs)
+Interaction between modules must only occur via well-defined public interfaces, typically a `public.py` exposed at the module's root. This decouples implementation details and enables future extraction of a module into a microservice with minimal effort.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Shared Nucleus (Core Module)
+Foundation code, such as centralized routing, global middleware, authentication logic, and common utility types, resides in a `core/` or `base/` module. Modules depend on `core/`, but `core/` never depends on feature modules.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Loose Coupling via Internal Events
+For side-effect-heavy cross-module operations (e.g., sending an email when a user registers), use an internal async event bus. This prevents temporal coupling and avoids blocking a module's core process with secondary tasks from another module.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. High Component Testability
+Every module must be independently testable. Unit tests should mock external module dependencies to verify the module's logic in isolation. Integration tests are reserved for verifying contract compliance between modules.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Architectural Constraints
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### Technology Stack
+- **Web Framework**: FastAPI (v0.100+)
+- **ORM & Models**: SQLModel / SQLAlchemy (v2.0+)
+- **Data Validation**: Pydantic v2
+- **Migrations**: Alembic (using partitioned migration paths)
+- **Formatting**: Ruff, Black, and MyPy for strict typing
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### Modular Structure
+All feature modules must follow a standard internal structure:
+- `models.py`: Database schemas (SQLModel)
+- `schemas.py`: Request/Response Pydantic models
+- `service.py`: Business logic and orchestration
+- `router.py`: API endpoints
+- `public.py`: Exposed interfaces for other modules
+- `tasks.py`: Background or event-driven handlers
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow
+
+### Rule 1: Module Creation
+To add a feature, create a new directory in `src/modules/[module_name]`. Register the module's router in `src/main.py` using a centralized registration pattern.
+
+### Rule 2: TDD & Documentation
+New features must include tests under `src/modules/[module_name]/tests/`. Documentation for public APIs in `public.py` is mandatory.
+
+### Rule 3: Zero Circular Dependencies
+Circular dependencies between modules are a violation of this constitution. If two modules are too tightly coupled, they should either be merged or their shared logic extracted to `core/`.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+This constitution supersedes all individual developer preferences. Amendments to these core principles require a formal architectural review and an update to this document. All Pull Requests must be checked for violations of module boundaries.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+**Version**: 1.0.0 | **Ratified**: 2026-03-31 | **Last Amended**: 2026-03-31
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
 <!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
